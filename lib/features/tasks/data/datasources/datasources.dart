@@ -42,19 +42,18 @@ class FirestoreTaskRemoteDataSource implements TaskRemoteDataSource {
     return _tasksRef()
         .orderBy('dueDate', descending: false)
         .snapshots()
-        .map((snapshot) {
-      return snapshot.docs
-          .where((doc) => doc.exists)
-          .map((doc) {
-            final data = doc.data();
-            return TaskModel.fromJson({...data, 'id': doc.id});
-          })
-          .toList();
-    }).handleError((Object error) {
-      if (error is TaskException) throw error;
-      if (error is FirebaseException) throw TaskException.fromFirebase(error);
-      throw TaskException(code: 'unknown', message: error.toString());
-    });
+        .map((snapshot) => snapshot.docs
+            .where((doc) => doc.exists)
+            .map((doc) {
+              final data = doc.data();
+              return TaskModel.fromJson({...data, 'id': doc.id});
+            })
+            .toList())
+        .handleError((Object error) {
+          if (error is TaskException) throw error;
+          if (error is FirebaseException) throw TaskException.fromFirebase(error);
+          throw TaskException(code: 'unknown', message: error.toString());
+        });
   }
 
   @override

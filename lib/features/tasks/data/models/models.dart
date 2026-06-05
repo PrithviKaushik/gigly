@@ -12,6 +12,8 @@ class TaskModel {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  static final _sentinelDate = DateTime(2100, 1, 1);
+
   const TaskModel({
     required this.id,
     required this.title,
@@ -41,7 +43,7 @@ class TaskModel {
       id: json['id'] as String,
       title: json['title'] as String,
       description: (json['description'] as String?) ?? '',
-      dueDate: (json['dueDate'] as Timestamp?)?.toDate(),
+      dueDate: _dueDateFromJson(json['dueDate']),
       priority: _priorityFromJson(json['priority']),
       isCompleted: (json['isCompleted'] as bool?) ?? false,
       createdAt: (json['createdAt'] as Timestamp).toDate(),
@@ -54,12 +56,18 @@ class TaskModel {
       'id': id,
       'title': title,
       'description': description,
-      'dueDate': dueDate != null ? Timestamp.fromDate(dueDate!) : null,
+      'dueDate': Timestamp.fromDate(dueDate ?? _sentinelDate),
       'priority': _priorityToJson(priority),
       'isCompleted': isCompleted,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
     };
+  }
+
+  static DateTime? _dueDateFromJson(dynamic value) {
+    if (value is! Timestamp) return null;
+    final date = value.toDate();
+    return date == _sentinelDate ? null : date;
   }
 
   TaskEntity toEntity() {
