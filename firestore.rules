@@ -1,0 +1,134 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ──── User profiles (optional, for future use) ────────────────
+    match /users/{userId} {
+      allow read, write: if false;
+
+      // ──── Tasks subcollection ───────────────────────────────────
+      match /tasks/{taskId} {
+
+        // ── Authentication & ownership gate ───────────────────────
+        // Every request must come from the authenticated user
+        // who owns the document path segment.
+        function isOwner() {
+          return request.auth != null
+              && request.auth.uid == userId;
+        }
+
+        // ── Incoming task data helpers ────────────────────────────
+        function incoming() {
+          return request.resource.data;
+        }
+
+        function existing() {
+          return resource.data;
+        }
+
+        // ── Timestamp helpers ─────────────────────────────────────
+        function isTimestamp(field) {
+          return field is timestamp;
+        }
+
+        function isString(field) {
+          return field is string;
+        }
+
+        function isBool(field) {
+          return field is bool;
+        }
+
+        function isNumber(field) {
+          return field is number;
+        }
+
+        function isNull(field) {
+          return field is null;
+        }
+
+        // ── Priority enum validation ──────────────────────────────
+        function isValidPriority(value) {
+          return value in ['low', 'medium', 'high'];
+        }
+
+        // ── Required fields on create ─────────────────────────────
+        function hasRequiredFields() {
+          return incoming().keys().hasAll([
+            'id',
+            'title',
+            'description',
+            'priority',
+            'isCompleted',
+            'createdAt',
+            'updatedAt',
+          ]);
+        }
+
+        // ── Field type validation (create & update) ───────────────
+        function validTypes() {
+          return isString(incoming().id)
+              && isString(incoming().title)
+              && isString(incoming().description)
+              && isValidPriority(incoming().priority)
+              && isBool(incoming().isCompleted);
+        }
+
+        // ── Timestamp validation (create & update) ────────────────
+        function validTimestamps() {
+          return isTimestamp(incoming().createdAt)
+              && isTimestamp(incoming().updatedAt);
+        }
+
+        // ── Content validation ────────────────────────────────────
+        function validContent() {
+          return incoming().title.size() > 0
+              && incoming().id.size() > 0;
+        }
+
+        // ── Ownership invariant ───────────────────────────────────
+        // The document's `id` field must match the document key.
+        function validDocumentId() {
+          return incoming().id == taskId;
+        }
+
+        // ── Immutable field guard (update only) ───────────────────
+        // Prevent changing creation timestamp and document id
+        // after the document has been written once.
+        function immutableFieldsUnchanged() {
+          return existing().id == incoming().id
+              && existing().createdAt == incoming().createdAt;
+        }
+
+        // ── Create ────────────────────────────────────────────────
+        allow create: if isOwner()
+            && hasRequiredFields()
+            && validTypes()
+            && validTimestamps()
+            && validContent()
+            && validDocumentId();
+
+        // ── Read ──────────────────────────────────────────────────
+        allow read: if isOwner();
+
+        // ── Update ────────────────────────────────────────────────
+        // `createdAt` and document `id` must remain unchanged.
+        allow update: if isOwner()
+            && validTypes()
+            && isTimestamp(incoming().updatedAt)
+            && validContent()
+            && validDocumentId()
+            && immutableFieldsUnchanged();
+
+        // ── Delete ────────────────────────────────────────────────
+        allow delete: if isOwner();
+
+      }
+    }
+
+    // ── Deny all other access ─────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
