@@ -66,12 +66,14 @@ service cloud.firestore {
         }
 
         // ── Field type validation (create & update) ───────────────
+        // `dueDate` is nullable — must be either null or a Timestamp.
         function validTypes() {
           return isString(incoming().id)
               && isString(incoming().title)
               && isString(incoming().description)
               && isValidPriority(incoming().priority)
-              && isBool(incoming().isCompleted);
+              && isBool(incoming().isCompleted)
+              && (isNull(incoming().dueDate) || isTimestamp(incoming().dueDate));
         }
 
         // ── Timestamp validation (create & update) ────────────────

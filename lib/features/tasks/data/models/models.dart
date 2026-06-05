@@ -54,7 +54,7 @@ class TaskModel {
       'id': id,
       'title': title,
       'description': description,
-      if (dueDate != null) 'dueDate': Timestamp.fromDate(dueDate!),
+      'dueDate': dueDate != null ? Timestamp.fromDate(dueDate!) : null,
       'priority': _priorityToJson(priority),
       'isCompleted': isCompleted,
       'createdAt': Timestamp.fromDate(createdAt),

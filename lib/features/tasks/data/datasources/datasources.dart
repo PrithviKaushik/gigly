@@ -39,23 +39,17 @@ class FirestoreTaskRemoteDataSource implements TaskRemoteDataSource {
 
   @override
   Stream<List<TaskModel>> getTasks() {
-    return _tasksRef().snapshots().map((snapshot) {
-      final tasks = snapshot.docs
+    return _tasksRef()
+        .orderBy('dueDate', descending: false)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
           .where((doc) => doc.exists)
           .map((doc) {
             final data = doc.data();
             return TaskModel.fromJson({...data, 'id': doc.id});
           })
           .toList();
-
-      tasks.sort((a, b) {
-        if (a.dueDate == null && b.dueDate == null) return 0;
-        if (a.dueDate == null) return 1;
-        if (b.dueDate == null) return -1;
-        return a.dueDate!.compareTo(b.dueDate!);
-      });
-
-      return tasks;
     }).handleError((Object error) {
       if (error is TaskException) throw error;
       if (error is FirebaseException) throw TaskException.fromFirebase(error);
