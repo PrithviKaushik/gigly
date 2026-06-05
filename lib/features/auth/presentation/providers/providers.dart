@@ -18,3 +18,47 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 final authStateProvider = StreamProvider<UserEntity?>((ref) {
   return ref.watch(authRepositoryProvider).authStateChanges();
 });
+
+class AuthNotifier extends Notifier<AsyncValue<void>?> {
+  @override
+  AsyncValue<void>? build() => null;
+
+  void clearState() => state = null;
+
+  AuthRepository get _repository => ref.read(authRepositoryProvider);
+
+  Future<void> login(String email, String password) async {
+    state = const AsyncLoading();
+    try {
+      await _repository.login(email: email, password: password);
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
+  }
+
+  Future<void> register(String email, String password) async {
+    state = const AsyncLoading();
+    try {
+      await _repository.register(email: email, password: password);
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
+  }
+
+  Future<void> logout() async {
+    state = const AsyncLoading();
+    try {
+      await _repository.logout();
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
+  }
+}
+
+final authNotifierProvider =
+    NotifierProvider<AuthNotifier, AsyncValue<void>?>(
+  AuthNotifier.new,
+);
