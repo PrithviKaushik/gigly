@@ -2,15 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/auth/presentation/providers/providers.dart';
 import '../../features/auth/presentation/pages/pages.dart';
 import '../../features/tasks/presentation/pages/pages.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
-  return GoRouter(
+  final router = GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/',
+    redirect: (context, state) {
+      final authState = ref.read(authStateProvider);
+      if (authState case AsyncData(:final value)) {
+        final isLoggedIn = value != null;
+        final location = state.matchedLocation;
+        final isAuthRoute = location == '/login' || location == '/register';
+        final isProtectedRoute = location == '/home';
+
+        if (!isLoggedIn && isProtectedRoute) return '/login';
+        if (isLoggedIn && isAuthRoute) return '/home';
+      }
+      return null;
+    },
     routes: [
       GoRoute(
         path: '/',
@@ -34,4 +48,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+
+  ref.listen(authStateProvider, (_, _) => router.refresh());
+
+  return router;
 });

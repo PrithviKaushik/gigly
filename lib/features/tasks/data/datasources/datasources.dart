@@ -56,6 +56,10 @@ class FirestoreTaskRemoteDataSource implements TaskRemoteDataSource {
       });
 
       return tasks;
+    }).handleError((Object error) {
+      if (error is TaskException) throw error;
+      if (error is FirebaseException) throw TaskException.fromFirebase(error);
+      throw TaskException(code: 'unknown', message: error.toString());
     });
   }
 

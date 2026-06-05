@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
+import '../../../../core/errors/errors.dart';
 import '../../../auth/presentation/providers/providers.dart';
+import '../../../dashboard/presentation/widgets/widgets.dart';
 import '../../domain/entities/entities.dart';
 import '../providers/providers.dart';
 import 'add_edit_task_bottom_sheet.dart';
@@ -12,17 +13,22 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(taskActionsNotifier, (_, next) {
+      if (next is AsyncError) {
+        final message = switch (next.error) {
+          TaskFailure e => e.message,
+          _ => 'An unexpected error occurred.',
+        };
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      }
+    });
+
     final tasksAsync = ref.watch(filteredTasksProvider);
+    final stats = ref.watch(taskStatsProvider).asData?.value;
     final filter = ref.watch(taskFilterProvider);
     final searchQuery = ref.watch(taskSearchProvider);
-
-    ref.listen(authStateProvider, (_, next) {
-      next.whenData((user) {
-        if (user == null && context.mounted) {
-          context.go('/login');
-        }
-      });
-    });
 
     return Scaffold(
       appBar: AppBar(
@@ -38,6 +44,11 @@ class HomeScreen extends ConsumerWidget {
       ),
       body: Column(
         children: [
+          if (stats != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: TaskStatsCards(stats: stats),
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: TextField(
@@ -50,42 +61,59 @@ class HomeScreen extends ConsumerWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Wrap(
-              spacing: 8,
-              children: [
-                FilterChip(
-                  label: const Text('All'),
-                  selected: filter.showCompleted == null,
-                  onSelected: (_) =>
-                      ref.read(taskFilterProvider.notifier).showAll(),
-                ),
-                FilterChip(
-                  label: const Text('Pending'),
-                  selected: filter.showCompleted == false,
-                  onSelected: (_) =>
-                      ref.read(taskFilterProvider.notifier).showPending(),
-                ),
-                FilterChip(
-                  label: const Text('Completed'),
-                  selected: filter.showCompleted == true,
-                  onSelected: (_) =>
-                      ref.read(taskFilterProvider.notifier).showCompleted(),
-                ),
-              ],
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildStatusChip(ref, filter, 'All', null),
+                  const SizedBox(width: 8),
+                  _buildStatusChip(ref, filter, 'Pending', false),
+                  const SizedBox(width: 8),
+                  _buildStatusChip(ref, filter, 'Completed', true),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildPriorityChip(ref, filter, 'Any', null),
+                  const SizedBox(width: 8),
+                  _buildPriorityChip(
+                      ref, filter, 'Low', TaskPriority.low),
+                  const SizedBox(width: 8),
+                  _buildPriorityChip(
+                      ref, filter, 'Medium', TaskPriority.medium),
+                  const SizedBox(width: 8),
+                  _buildPriorityChip(
+                      ref, filter, 'High', TaskPriority.high),
+                ],
+              ),
             ),
           ),
           Expanded(
             child: tasksAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, _) => Center(child: Text('$error')),
+              error: (error, _) => Center(
+                child: Text(
+                  switch (error) {
+                    TaskFailure e => e.message,
+                    _ => 'An unexpected error occurred.',
+                  },
+                ),
+              ),
               data: (tasks) {
                 if (tasks.isEmpty) {
+                  final hasActiveFilter = searchQuery.isNotEmpty ||
+                      filter.showCompleted != null ||
+                      filter.priority != null;
                   return Center(
                     child: Text(
-                      searchQuery.isNotEmpty || filter.showCompleted != null
-                          ? 'No matching tasks'
-                          : 'No tasks yet',
+                      hasActiveFilter ? 'No matching tasks' : 'No tasks yet',
                     ),
                   );
                 }
@@ -103,7 +131,7 @@ class HomeScreen extends ConsumerWidget {
                       title: Text(task.title),
                       subtitle: task.dueDate != null
                           ? Text(
-                              '${task.priority.name} · ${_formatDate(task.dueDate!)}')
+                              '${task.priority.name} \u00b7 ${_formatDate(task.dueDate!)}')
                           : Text(task.priority.name),
                       trailing: IconButton(
                         icon: const Icon(Icons.delete),
@@ -127,6 +155,10 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
+  String _formatDate(DateTime date) {
+    return '${date.month}/${date.day}/${date.year}';
+  }
+
   void _showTaskSheet(BuildContext context, WidgetRef ref,
       [TaskEntity? existing]) {
     showModalBottomSheet(
@@ -136,7 +168,47 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.month}/${date.day}/${date.year}';
+  Widget _buildStatusChip(
+    WidgetRef ref,
+    TaskFilterState filter,
+    String label,
+    bool? value,
+  ) {
+    final isSelected = filter.showCompleted == value;
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (_) {
+        final notifier = ref.read(taskFilterProvider.notifier);
+        if (value == null) {
+          notifier.showAll();
+        } else if (value) {
+          notifier.showCompleted();
+        } else {
+          notifier.showPending();
+        }
+      },
+    );
+  }
+
+  Widget _buildPriorityChip(
+    WidgetRef ref,
+    TaskFilterState filter,
+    String label,
+    TaskPriority? value,
+  ) {
+    final isSelected = filter.priority == value;
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (_) {
+        final notifier = ref.read(taskFilterProvider.notifier);
+        if (value == null) {
+          notifier.clearPriority();
+        } else {
+          notifier.filterByPriority(value);
+        }
+      },
+    );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/errors/errors.dart';
 import '../providers/providers.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -29,12 +30,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(authStateProvider, (_, next) {
-      next.whenData((user) {
-        if (user != null && context.mounted) {
-          context.go('/home');
-        }
-      });
+    ref.listen(authNotifierProvider, (_, next) {
+      if (next is AsyncError) {
+        final message = switch (next.error) {
+          AuthFailure e => e.message,
+          _ => 'An unexpected error occurred.',
+        };
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      }
     });
 
     final authStatus = ref.watch(authNotifierProvider);
@@ -94,17 +99,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               },
             ),
             const SizedBox(height: 24),
-            switch (authStatus) {
-              AsyncLoading() => const Center(child: CircularProgressIndicator()),
-              AsyncError(:final error) => Column(
-                  children: [
-                    Text('$error'),
-                    const SizedBox(height: 8),
-                    _buildRegisterButton(),
-                  ],
-                ),
-              _ => _buildRegisterButton(),
-            },
+            if (authStatus is AsyncLoading)
+              const Center(child: CircularProgressIndicator())
+            else
+              _buildRegisterButton(),
             const SizedBox(height: 16),
             TextButton(
               onPressed: () => context.pop(),

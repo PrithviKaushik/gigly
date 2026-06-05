@@ -19,9 +19,17 @@ class TasksRepositoryImpl implements TasksRepository {
 
   @override
   Stream<List<TaskEntity>> getTasks() {
-    return _dataSource.getTasks().map(
-          (models) => models.map((m) => m.toEntity()).toList(),
-        );
+    try {
+      return _dataSource.getTasks().map(
+        (models) => models.map((m) => m.toEntity()).toList(),
+      ).handleError((Object error) {
+        if (error is TaskException) throw _mapToFailure(error);
+        throw TaskUnknown(error.toString());
+      });
+    } catch (e) {
+      if (e is TaskException) return Stream.error(_mapToFailure(e));
+      return Stream.error(TaskUnknown(e.toString()));
+    }
   }
 
   @override
