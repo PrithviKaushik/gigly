@@ -129,15 +129,10 @@ class HomeScreen extends ConsumerWidget {
                             .toggleCompletion(task),
                       ),
                       title: Text(task.title),
-                      subtitle: task.dueDate != null
-                          ? Text(
-                              '${task.priority.name} \u00b7 ${_formatDate(task.dueDate!)}')
-                          : Text(task.priority.name),
+                      subtitle: _buildTaskSubtitle(context, task),
                       trailing: IconButton(
                         icon: const Icon(Icons.delete),
-                        onPressed: () => ref
-                            .read(taskActionsNotifier.notifier)
-                            .deleteTask(task.id),
+                        onPressed: () => _confirmDelete(context, ref, task),
                       ),
                       onTap: () => _showTaskSheet(context, ref, task),
                     );
@@ -155,8 +150,37 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.month}/${date.day}/${date.year}';
+  Widget _buildTaskSubtitle(BuildContext context, TaskEntity task) {
+    final theme = Theme.of(context);
+    final priority = task.priority.name;
+    final dueDate = task.dueDate;
+
+    if (dueDate == null) return Text(priority);
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final dueDay = DateTime(dueDate.year, dueDate.month, dueDate.day);
+    final diff = dueDay.difference(today).inDays;
+
+    String dateText;
+    TextStyle? dateStyle;
+    if (diff < 0 && !task.isCompleted) {
+      dateText = 'Overdue';
+      dateStyle = TextStyle(color: theme.colorScheme.error);
+    } else if (diff == 0) {
+      dateText = 'Today';
+    } else if (diff == 1) {
+      dateText = 'Tomorrow';
+    } else {
+      dateText = '${dueDate.month}/${dueDate.day}/${dueDate.year}';
+    }
+
+    return Text(
+      '$priority \u00b7 $dateText',
+      style: dateStyle != null
+          ? theme.textTheme.bodySmall?.copyWith(color: dateStyle.color)
+          : theme.textTheme.bodySmall,
+    );
   }
 
   void _showTaskSheet(BuildContext context, WidgetRef ref,
@@ -165,6 +189,43 @@ class HomeScreen extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       builder: (_) => AddEditTaskBottomSheet(existingTask: existing),
+    );
+  }
+
+  void _confirmDelete(BuildContext context, WidgetRef ref, TaskEntity task) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete task'),
+        content: Text('Are you sure you want to delete "${task.title}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              try {
+                await ref.read(taskActionsNotifier.notifier).deleteTask(task);
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Task deleted'),
+                    action: SnackBarAction(
+                      label: 'Undo',
+                      onPressed: () {
+                        ref.read(taskActionsNotifier.notifier).undoDelete();
+                      },
+                    ),
+                  ),
+                );
+              } catch (_) {}
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
     );
   }
 

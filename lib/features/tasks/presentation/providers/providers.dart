@@ -110,6 +110,8 @@ class TaskActionsNotifier extends Notifier<AsyncValue<void>?> {
 
   void clearState() => state = null;
 
+  TaskEntity? _lastDeletedTask;
+
   TasksRepository get _repository => ref.read(taskRepositoryProvider);
 
   Future<TaskEntity> createTask({
@@ -155,10 +157,26 @@ class TaskActionsNotifier extends Notifier<AsyncValue<void>?> {
     await updateTask(task.copyWith(isCompleted: !task.isCompleted));
   }
 
-  Future<void> deleteTask(String id) async {
+  Future<void> deleteTask(TaskEntity task) async {
+    state = const AsyncLoading();
+    _lastDeletedTask = task;
+    try {
+      await _repository.deleteTask(task.id);
+      state = const AsyncData(null);
+    } catch (e, st) {
+      _lastDeletedTask = null;
+      state = AsyncError(e, st);
+      rethrow;
+    }
+  }
+
+  Future<void> undoDelete() async {
+    final task = _lastDeletedTask;
+    if (task == null) return;
+    _lastDeletedTask = null;
     state = const AsyncLoading();
     try {
-      await _repository.deleteTask(id);
+      await _repository.restoreTask(task);
       state = const AsyncData(null);
     } catch (e, st) {
       state = AsyncError(e, st);

@@ -80,6 +80,16 @@ class TasksRepositoryImpl implements TasksRepository {
     }
   }
 
+  @override
+  Future<void> restoreTask(TaskEntity task) async {
+    final model = TaskModel.fromEntity(task);
+    try {
+      await _dataSource.createTask(model);
+    } on TaskException catch (e) {
+      throw _mapToFailure(e);
+    }
+  }
+
   TaskFailure _mapToFailure(TaskException e) {
     return switch (e.code) {
       'not-found' => const TaskNotFound(),
