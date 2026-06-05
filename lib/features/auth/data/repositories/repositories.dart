@@ -11,6 +11,11 @@ class AuthRepositoryImpl implements AuthRepository {
       : _dataSource = dataSource;
 
   @override
+  Stream<UserEntity?> authStateChanges() {
+    return _dataSource.authStateChanges().map((model) => model?.toEntity());
+  }
+
+  @override
   Future<UserEntity> login({
     required String email,
     required String password,

@@ -50,3 +50,32 @@ class AuthUnknown extends AuthFailure {
   final String message;
   const AuthUnknown(this.message);
 }
+
+sealed class TaskFailure implements Exception {
+  String get message;
+  const TaskFailure();
+}
+
+class TaskNotFound extends TaskFailure {
+  @override
+  String get message => 'Task not found.';
+  const TaskNotFound();
+}
+
+class TaskPermissionDenied extends TaskFailure {
+  @override
+  String get message => 'You do not have permission to perform this action.';
+  const TaskPermissionDenied();
+}
+
+class TaskNetworkError extends TaskFailure {
+  @override
+  String get message => 'Network error. Please check your connection.';
+  const TaskNetworkError();
+}
+
+class TaskUnknown extends TaskFailure {
+  @override
+  final String message;
+  const TaskUnknown(this.message);
+}

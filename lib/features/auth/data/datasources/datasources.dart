@@ -7,6 +7,7 @@ abstract class AuthRemoteDataSource {
   Future<UserModel> login({required String email, required String password});
   Future<UserModel> register({required String email, required String password});
   Future<void> logout();
+  Stream<UserModel?> authStateChanges();
 }
 
 class FirebaseAuthRemoteDataSource implements AuthRemoteDataSource {
@@ -56,6 +57,11 @@ class FirebaseAuthRemoteDataSource implements AuthRemoteDataSource {
     }
   }
 
+  @override
+  Stream<UserModel?> authStateChanges() {
+    return _auth.authStateChanges().map(_mapFirebaseUser);
+  }
+
   UserModel _mapUser(fa.User? user) {
     if (user == null) {
       throw AuthException.unexpectedError(
@@ -68,6 +74,18 @@ class FirebaseAuthRemoteDataSource implements AuthRemoteDataSource {
         'Email is null after email/password authentication.',
       );
     }
+    return UserModel(
+      id: user.uid,
+      email: email,
+      displayName: user.displayName,
+      photoUrl: user.photoURL,
+    );
+  }
+
+  UserModel? _mapFirebaseUser(fa.User? user) {
+    if (user == null) return null;
+    final email = user.email;
+    if (email == null) return null;
     return UserModel(
       id: user.uid,
       email: email,
