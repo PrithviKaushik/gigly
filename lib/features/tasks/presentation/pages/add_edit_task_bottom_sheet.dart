@@ -134,25 +134,25 @@ class _AddEditTaskBottomSheetState
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final notifier = ref.read(taskActionsNotifier.notifier);
-    try {
-      if (_isEditing) {
-        await notifier.updateTask(
-          widget.existingTask!.copyWith(
-            title: _titleController.text.trim(),
-            description: _descriptionController.text.trim(),
-            dueDate: _dueDate,
-            priority: _priority,
-          ),
-        );
-      } else {
-        await notifier.createTask(
+    if (_isEditing) {
+      await notifier.updateTask(
+        widget.existingTask!.copyWith(
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim(),
           dueDate: _dueDate,
           priority: _priority,
-        );
-      }
-      if (mounted) Navigator.of(context).pop();
-    } catch (_) {}
+        ),
+      );
+    } else {
+      await notifier.createTask(
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        dueDate: _dueDate,
+        priority: _priority,
+      );
+    }
+    if (ref.read(taskActionsNotifier) is AsyncData && mounted) {
+      Navigator.of(context).pop();
+    }
   }
 }

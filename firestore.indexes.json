@@ -1,11 +1,5 @@
 {
   "indexes": [
-    // ─────────────────────────────────────────────
-    // CURRENT: sort by dueDate (ascending)
-    // Single-field index — created automatically by
-    // Firestore on first orderBy('dueDate') query.
-    // Manually declared here for documentation.
-    // ─────────────────────────────────────────────
     {
       "collectionGroup": "tasks",
       "queryScope": "COLLECTION",
@@ -13,12 +7,6 @@
         { "fieldPath": "dueDate", "order": "ASCENDING" }
       ]
     },
-
-    // ─────────────────────────────────────────────
-    // FUTURE: filter by isCompleted, sort by dueDate
-    // Used when "Pending" or "Completed" chips are
-    // active AND results are ordered by dueDate.
-    // ─────────────────────────────────────────────
     {
       "collectionGroup": "tasks",
       "queryScope": "COLLECTION",
@@ -27,12 +15,6 @@
         { "fieldPath": "dueDate", "order": "ASCENDING" }
       ]
     },
-
-    // ─────────────────────────────────────────────
-    // FUTURE: filter by priority, sort by dueDate
-    // Used when a priority chip is active AND results
-    // are ordered by dueDate.
-    // ─────────────────────────────────────────────
     {
       "collectionGroup": "tasks",
       "queryScope": "COLLECTION",
@@ -41,13 +23,6 @@
         { "fieldPath": "dueDate", "order": "ASCENDING" }
       ]
     },
-
-    // ─────────────────────────────────────────────
-    // FUTURE: filter by isCompleted AND priority,
-    //          sort by dueDate
-    // Used when both status and priority chips are
-    // active with dueDate ordering.
-    // ─────────────────────────────────────────────
     {
       "collectionGroup": "tasks",
       "queryScope": "COLLECTION",

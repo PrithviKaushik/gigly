@@ -9,7 +9,9 @@ import '../../features/tasks/presentation/pages/pages.dart';
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final router = GoRouter(
+  ref.watch(authStateProvider);
+
+  return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/',
     redirect: (context, state) {
@@ -17,6 +19,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (authState case AsyncData(:final value)) {
         final isLoggedIn = value != null;
         final location = state.matchedLocation;
+
+        if (location == '/') {
+          return isLoggedIn ? '/home' : '/login';
+        }
+
         final isAuthRoute = location == '/login' || location == '/register';
         final isProtectedRoute = location == '/home';
 
@@ -48,8 +55,4 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
-
-  ref.listen(authStateProvider, (_, _) => router.refresh());
-
-  return router;
 });

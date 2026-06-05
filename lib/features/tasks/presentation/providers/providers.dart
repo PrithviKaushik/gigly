@@ -114,7 +114,7 @@ class TaskActionsNotifier extends Notifier<AsyncValue<void>?> {
 
   TasksRepository get _repository => ref.read(taskRepositoryProvider);
 
-  Future<TaskEntity> createTask({
+  Future<void> createTask({
     required String title,
     String description = '',
     DateTime? dueDate,
@@ -123,7 +123,7 @@ class TaskActionsNotifier extends Notifier<AsyncValue<void>?> {
     state = const AsyncLoading();
     try {
       final now = DateTime.now();
-      final entity = await _repository.createTask(
+      await _repository.createTask(
         TaskEntity(
           id: '',
           title: title,
@@ -136,10 +136,8 @@ class TaskActionsNotifier extends Notifier<AsyncValue<void>?> {
         ),
       );
       state = const AsyncData(null);
-      return entity;
     } catch (e, st) {
       state = AsyncError(e, st);
-      rethrow;
     }
   }
 
@@ -166,7 +164,6 @@ class TaskActionsNotifier extends Notifier<AsyncValue<void>?> {
     } catch (e, st) {
       _lastDeletedTask = null;
       state = AsyncError(e, st);
-      rethrow;
     }
   }
 

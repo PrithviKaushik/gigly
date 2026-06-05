@@ -206,21 +206,19 @@ class HomeScreen extends ConsumerWidget {
           TextButton(
             onPressed: () async {
               Navigator.of(ctx).pop();
-              try {
-                await ref.read(taskActionsNotifier.notifier).deleteTask(task);
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Task deleted'),
-                    action: SnackBarAction(
-                      label: 'Undo',
-                      onPressed: () {
-                        ref.read(taskActionsNotifier.notifier).undoDelete();
-                      },
-                    ),
+              await ref.read(taskActionsNotifier.notifier).deleteTask(task);
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Task deleted'),
+                  action: SnackBarAction(
+                    label: 'Undo',
+                    onPressed: () {
+                      ref.read(taskActionsNotifier.notifier).undoDelete();
+                    },
                   ),
-                );
-              } catch (_) {}
+                ),
+              );
             },
             child: const Text('Delete'),
           ),
