@@ -61,6 +61,7 @@ class TaskFilterNotifier extends Notifier<TaskFilterState> {
     state = state.copyWith(priority: priority);
   }
   void clearPriority() => state = state.copyWith(clearPriority: true);
+  void clearAll() => state = const TaskFilterState();
 }
 
 final taskFilterProvider =
@@ -104,6 +105,50 @@ final taskStatsProvider = Provider<AsyncValue<TaskStats>>((ref) {
       pending: tasks.length - completed,
       overdue: overdue,
       byPriority: Map.unmodifiable(byPriority),
+    );
+  });
+});
+
+class FilterCounts {
+  final int statusAll;
+  final int statusPending;
+  final int statusCompleted;
+  final int priorityAll;
+  final int priorityLow;
+  final int priorityMedium;
+  final int priorityHigh;
+
+  const FilterCounts({
+    required this.statusAll,
+    required this.statusPending,
+    required this.statusCompleted,
+    required this.priorityAll,
+    required this.priorityLow,
+    required this.priorityMedium,
+    required this.priorityHigh,
+  });
+}
+
+final filterCountsProvider = Provider<AsyncValue<FilterCounts>>((ref) {
+  final tasksAsync = ref.watch(tasksStreamProvider);
+  final filter = ref.watch(taskFilterProvider);
+
+  return tasksAsync.whenData((tasks) {
+    final priorityBase = filter.priority == null
+        ? tasks
+        : tasks.where((t) => t.priority == filter.priority).toList();
+    final statusBase = filter.showCompleted == null
+        ? tasks
+        : tasks.where((t) => t.isCompleted == filter.showCompleted).toList();
+
+    return FilterCounts(
+      statusAll: priorityBase.length,
+      statusPending: priorityBase.where((t) => !t.isCompleted).length,
+      statusCompleted: priorityBase.where((t) => t.isCompleted).length,
+      priorityAll: statusBase.length,
+      priorityLow: statusBase.where((t) => t.priority == TaskPriority.low).length,
+      priorityMedium: statusBase.where((t) => t.priority == TaskPriority.medium).length,
+      priorityHigh: statusBase.where((t) => t.priority == TaskPriority.high).length,
     );
   });
 });

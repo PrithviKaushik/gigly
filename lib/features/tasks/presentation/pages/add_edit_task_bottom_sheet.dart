@@ -46,6 +46,7 @@ class _AddEditTaskBottomSheetState
   @override
   Widget build(BuildContext context) {
     final isSaving = ref.watch(taskActionsNotifier) is AsyncLoading;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final bottom = MediaQuery.of(context).padding.bottom;
     final availableHeight = MediaQuery.of(context).size.height;
@@ -121,8 +122,8 @@ class _AddEditTaskBottomSheetState
                 children: TaskPriority.values.map((p) {
                   final selected = _priority == p;
                   final color = switch (p) {
-                    TaskPriority.low => const Color(0xFF16a34a),
-                    TaskPriority.medium => const Color(0xFFf59e0b),
+                    TaskPriority.low => isDark ? AppColors.darkPriorityLow : AppColors.priorityLow,
+                    TaskPriority.medium => isDark ? AppColors.darkPriorityMedium : AppColors.priorityMedium,
                     TaskPriority.high => Theme.of(context).colorScheme.error,
                   };
                   return Expanded(
