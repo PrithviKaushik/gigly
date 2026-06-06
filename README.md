@@ -100,21 +100,26 @@ test/
 1. Create a Firebase project at [firebase.google.com](https://firebase.google.com).
 2. Enable **Authentication** → **Sign-in method** → **Email/Password**.
 3. Enable **Cloud Firestore** in production mode.
-4. Register your app (Android, iOS, Web) and download `google-services.json`, `GoogleService-Info.plist`, etc.
-5. Run FlutterFire CLI to generate `lib/firebase_options.dart`:
+4. Run FlutterFire CLI to register your app platforms and generate all configuration files (including `firebase_options.dart`, `google-services.json`, and `GoogleService-Info.plist`):
 
 ```bash
 dart pub global activate flutterfire_cli
 flutterfire configure --project=your-project-id
 ```
 
-6. Deploy Firestore security rules and indexes:
+5. (Optional) If building for iOS or macOS, also generate the platform-specific config:
 
 ```bash
-firebase deploy --only firestore:rules,firestore:indexes
+flutterfire configure --platforms=ios,macos
 ```
 
-> **Note:** This repository does not include private Firebase credentials (`google-services.json`, `GoogleService-Info.plist`, `firebase_options.dart`). You must generate these for your own Firebase project via `flutterfire configure`.
+6. Deploy Firestore security rules and indexes (uses the pre-configured `.firebaserc`):
+
+```bash
+firebase deploy --only firestore
+```
+
+> **Note:** This repository includes `firebase_options.dart` pre-configured for the `gigly-2927a` project. To use your own Firebase project, delete it and re-run `flutterfire configure`. Other credential files (`google-services.json`, `GoogleService-Info.plist`) are gitignored — they must be generated locally.
 
 ---
 

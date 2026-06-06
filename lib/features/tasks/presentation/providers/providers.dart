@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../auth/presentation/providers/providers.dart';
 import '../../data/datasources/datasources.dart';
 import '../../data/repositories/repositories.dart';
 import '../../domain/entities/entities.dart';
@@ -16,6 +17,9 @@ final taskRepositoryProvider = Provider<TasksRepository>((ref) {
 });
 
 final tasksStreamProvider = StreamProvider<List<TaskEntity>>((ref) {
+  final authAsync = ref.watch(authStateProvider);
+  final user = authAsync.asData?.value;
+  if (user == null) return const Stream.empty();
   return ref.watch(taskRepositoryProvider).getTasks();
 });
 

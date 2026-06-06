@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/errors/errors.dart';
-import '../../../auth/presentation/providers/providers.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/gigly_bottom_sheet.dart';
+import '../../../../core/widgets/gigly_dialog.dart';
+import '../../../../core/widgets/gigly_drawer.dart';
+import '../../../../core/widgets/gigly_snackbar.dart';
 import '../../../dashboard/presentation/widgets/widgets.dart';
 import '../../domain/entities/entities.dart';
 import '../providers/providers.dart';
@@ -19,9 +23,7 @@ class HomeScreen extends ConsumerWidget {
           TaskFailure e => e.message,
           _ => 'An unexpected error occurred.',
         };
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message)),
-        );
+        GiglySnackbar.showError(context, message);
       }
     });
 
@@ -32,78 +34,91 @@ class HomeScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tasks'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              ref.read(authNotifierProvider.notifier).logout();
-            },
+        title: const Text('Gigly'),
+        leading: Builder(
+          builder: (ctx) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(ctx).openDrawer(),
           ),
-        ],
+        ),
       ),
+      drawer: const GiglyDrawer(),
       body: Column(
         children: [
-          if (stats != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: TaskStatsCards(stats: stats),
-            ),
+          if (stats != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            TaskStatsCards(stats: stats),
+          ],
+          const SizedBox(height: AppSpacing.lg),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: TextField(
               decoration: const InputDecoration(
-                labelText: 'Search',
+                hintText: 'Search tasks',
                 prefixIcon: Icon(Icons.search),
               ),
               onChanged: (v) =>
                   ref.read(taskSearchProvider.notifier).search(v),
             ),
           ),
+          const SizedBox(height: AppSpacing.md),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildStatusChip(ref, filter, 'All', null),
-                  const SizedBox(width: 8),
-                  _buildStatusChip(ref, filter, 'Pending', false),
-                  const SizedBox(width: 8),
-                  _buildStatusChip(ref, filter, 'Completed', true),
-                ],
-              ),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(right: AppSpacing.sm),
+                      child: _buildSectionLabel(context, 'Status'),
+                    ),
+                    _buildStatusChip(context, ref, filter, 'All', null),
+                    const SizedBox(width: AppSpacing.sm),
+                    _buildStatusChip(context, ref, filter, 'Pending', false),
+                    const SizedBox(width: AppSpacing.sm),
+                    _buildStatusChip(context, ref, filter, 'Completed', true),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Row(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(right: AppSpacing.sm),
+                      child: _buildSectionLabel(context, 'Priority'),
+                    ),
+                    _buildPriorityChip(context, ref, filter, 'Any', null),
+                    const SizedBox(width: AppSpacing.sm),
+                    _buildPriorityChip(context, ref, filter, 'Low', TaskPriority.low),
+                    const SizedBox(width: AppSpacing.sm),
+                    _buildPriorityChip(
+                        context, ref, filter, 'Medium', TaskPriority.medium),
+                    const SizedBox(width: AppSpacing.sm),
+                    _buildPriorityChip(
+                        context, ref, filter, 'High', TaskPriority.high),
+                  ],
+                ),
+              ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildPriorityChip(ref, filter, 'Any', null),
-                  const SizedBox(width: 8),
-                  _buildPriorityChip(
-                      ref, filter, 'Low', TaskPriority.low),
-                  const SizedBox(width: 8),
-                  _buildPriorityChip(
-                      ref, filter, 'Medium', TaskPriority.medium),
-                  const SizedBox(width: 8),
-                  _buildPriorityChip(
-                      ref, filter, 'High', TaskPriority.high),
-                ],
-              ),
-            ),
-          ),
+          const SizedBox(height: AppSpacing.sm),
           Expanded(
             child: tasksAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, _) => Center(
-                child: Text(
-                  switch (error) {
-                    TaskFailure e => e.message,
-                    _ => 'An unexpected error occurred.',
-                  },
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.xl),
+                  child: Text(
+                    switch (error) {
+                      TaskFailure e => e.message,
+                      _ => 'An unexpected error occurred.',
+                    },
+                    style: AppTextStyles.bodyMd.copyWith(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ),
               data: (tasks) {
@@ -112,29 +127,58 @@ class HomeScreen extends ConsumerWidget {
                       filter.showCompleted != null ||
                       filter.priority != null;
                   return Center(
-                    child: Text(
-                      hasActiveFilter ? 'No matching tasks' : 'No tasks yet',
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          hasActiveFilter
+                              ? Icons.search_off
+                              : Icons.checklist_outlined,
+                          size: 64,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        Text(
+                          hasActiveFilter
+                              ? 'No matching tasks'
+                              : 'No tasks yet',
+                          style: AppTextStyles.headlineSm.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        if (!hasActiveFilter) ...[
+                          const SizedBox(height: AppSpacing.sm),
+                          Text(
+                            'Tap + to create your first task',
+                            style: AppTextStyles.bodyMd.copyWith(
+                              color: Theme.of(context).colorScheme.outline,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   );
                 }
                 return ListView.builder(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                    vertical: AppSpacing.sm,
+                  ),
                   itemCount: tasks.length,
                   itemBuilder: (_, i) {
                     final task = tasks[i];
-                    return ListTile(
-                      leading: Checkbox(
-                        value: task.isCompleted,
-                        onChanged: (_) => ref
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                      child: _TaskCard(
+                        task: task,
+                        onToggle: () => ref
                             .read(taskActionsNotifier.notifier)
                             .toggleCompletion(task),
+                        onDelete: () =>
+                            _confirmDelete(context, ref, task),
+                        onTap: () =>
+                            _showTaskSheet(context, ref, task),
                       ),
-                      title: Text(task.title),
-                      subtitle: _buildTaskSubtitle(context, task),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () => _confirmDelete(context, ref, task),
-                      ),
-                      onTap: () => _showTaskSheet(context, ref, task),
                     );
                   },
                 );
@@ -150,84 +194,43 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTaskSubtitle(BuildContext context, TaskEntity task) {
-    final theme = Theme.of(context);
-    final priority = task.priority.name;
-    final dueDate = task.dueDate;
-
-    if (dueDate == null) return Text(priority);
-
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final dueDay = DateTime(dueDate.year, dueDate.month, dueDate.day);
-    final diff = dueDay.difference(today).inDays;
-
-    String dateText;
-    TextStyle? dateStyle;
-    if (diff < 0 && !task.isCompleted) {
-      dateText = 'Overdue';
-      dateStyle = TextStyle(color: theme.colorScheme.error);
-    } else if (diff == 0) {
-      dateText = 'Today';
-    } else if (diff == 1) {
-      dateText = 'Tomorrow';
-    } else {
-      dateText = '${dueDate.month}/${dueDate.day}/${dueDate.year}';
-    }
-
-    return Text(
-      '$priority \u00b7 $dateText',
-      style: dateStyle != null
-          ? theme.textTheme.bodySmall?.copyWith(color: dateStyle.color)
-          : theme.textTheme.bodySmall,
-    );
-  }
-
   void _showTaskSheet(BuildContext context, WidgetRef ref,
       [TaskEntity? existing]) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => AddEditTaskBottomSheet(existingTask: existing),
+    GiglyBottomSheet.show(
+      context,
+      child: AddEditTaskBottomSheet(existingTask: existing),
     );
   }
 
   void _confirmDelete(BuildContext context, WidgetRef ref, TaskEntity task) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete task'),
-        content: Text('Are you sure you want to delete "${task.title}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.of(ctx).pop();
-              await ref.read(taskActionsNotifier.notifier).deleteTask(task);
-              if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Task deleted'),
-                  action: SnackBarAction(
-                    label: 'Undo',
-                    onPressed: () {
-                      ref.read(taskActionsNotifier.notifier).undoDelete();
-                    },
-                  ),
-                ),
-              );
-            },
-            child: const Text('Delete'),
-          ),
-        ],
+      builder: (ctx) => GiglyDialog(
+        title: 'Delete task',
+        message: 'Are you sure you want to delete "${task.title}"?',
+        confirmLabel: 'Delete',
+        confirmColor: Theme.of(context).colorScheme.error,
+        onConfirm: () async {
+          Navigator.of(ctx).pop();
+          await ref.read(taskActionsNotifier.notifier).deleteTask(task);
+          if (!context.mounted) return;
+          if (ref.read(taskActionsNotifier) case AsyncData()) {
+            GiglySnackbar.show(
+              context,
+              message: 'Task deleted',
+              actionLabel: 'Undo',
+              onAction: () {
+                ref.read(taskActionsNotifier.notifier).undoDelete();
+              },
+            );
+          }
+        },
       ),
     );
   }
 
   Widget _buildStatusChip(
+    BuildContext context,
     WidgetRef ref,
     TaskFilterState filter,
     String label,
@@ -235,7 +238,14 @@ class HomeScreen extends ConsumerWidget {
   ) {
     final isSelected = filter.showCompleted == value;
     return FilterChip(
-      label: Text(label),
+      label: Text(
+        label,
+        style: TextStyle(
+          color: isSelected
+              ? Theme.of(context).colorScheme.onPrimary
+              : null,
+        ),
+      ),
       selected: isSelected,
       onSelected: (_) {
         final notifier = ref.read(taskFilterProvider.notifier);
@@ -251,6 +261,7 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Widget _buildPriorityChip(
+    BuildContext context,
     WidgetRef ref,
     TaskFilterState filter,
     String label,
@@ -258,7 +269,14 @@ class HomeScreen extends ConsumerWidget {
   ) {
     final isSelected = filter.priority == value;
     return FilterChip(
-      label: Text(label),
+      label: Text(
+        label,
+        style: TextStyle(
+          color: isSelected
+              ? Theme.of(context).colorScheme.onPrimary
+              : null,
+        ),
+      ),
       selected: isSelected,
       onSelected: (_) {
         final notifier = ref.read(taskFilterProvider.notifier);
@@ -269,5 +287,210 @@ class HomeScreen extends ConsumerWidget {
         }
       },
     );
+  }
+
+  Widget _buildSectionLabel(BuildContext context, String label) {
+    return Text(
+      label,
+      style: AppTextStyles.labelSm.copyWith(
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+}
+
+class _TaskCard extends StatelessWidget {
+  final TaskEntity task;
+  final VoidCallback onToggle;
+  final VoidCallback onDelete;
+  final VoidCallback onTap;
+
+  const _TaskCard({
+    required this.task,
+    required this.onToggle,
+    required this.onDelete,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final priorityColor = switch (task.priority) {
+      TaskPriority.high => Theme.of(context).colorScheme.error,
+      TaskPriority.medium => const Color(0xFFf59e0b),
+      TaskPriority.low => const Color(0xFF16a34a),
+    };
+    final overdue = task.dueDate != null && !task.isCompleted &&
+        DateTime(task.dueDate!.year, task.dueDate!.month, task.dueDate!.day)
+            .isBefore(DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day));
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: IntrinsicHeight(
+          child: Row(
+            children: [
+              Container(
+                width: 4,
+                decoration: BoxDecoration(color: priorityColor),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.md,
+                    AppSpacing.md,
+                    AppSpacing.sm,
+                    AppSpacing.md,
+                  ),
+                  child: Row(
+                    children: [
+                      Checkbox(
+                        value: task.isCompleted,
+                        onChanged: (_) => onToggle(),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              task.title,
+                              style: AppTextStyles.bodyLg.copyWith(
+                                decoration: task.isCompleted
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                                color: task.isCompleted
+                                    ? Theme.of(context).colorScheme.onSurfaceVariant
+                                    : Theme.of(context).colorScheme.onSurface,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            _TaskSubtitle(task: task),
+                          ],
+                        ),
+                      ),
+                      if (overdue)
+                        Padding(
+                          padding: const EdgeInsets.only(right: AppSpacing.xs),
+                          child: Icon(
+                            Icons.error_outline,
+                            size: 20,
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                      IconButton(
+                        icon: Icon(
+                          Icons.delete_outline,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          size: 20,
+                        ),
+                        onPressed: onDelete,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TaskSubtitle extends StatelessWidget {
+  final TaskEntity task;
+
+  const _TaskSubtitle({required this.task});
+
+  @override
+  Widget build(BuildContext context) {
+    final priority = task.priority.name;
+    final dueDate = task.dueDate;
+    final description = task.description;
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    Color dateColor;
+    String dateText;
+
+    if (dueDate == null) {
+      dateText = priority;
+      dateColor = Theme.of(context).colorScheme.onSurfaceVariant;
+    } else {
+      final dueDay = DateTime(dueDate.year, dueDate.month, dueDate.day);
+      final diff = dueDay.difference(today).inDays;
+
+      if (diff < 0 && !task.isCompleted) {
+        dateText = 'Overdue \u00b7 $priority';
+        dateColor = Theme.of(context).colorScheme.error;
+      } else {
+        String relativeDate;
+        if (diff == 0) {
+          relativeDate = 'Today';
+        } else if (diff == 1) {
+          relativeDate = 'Tomorrow';
+        } else {
+          relativeDate = '${dueDate.month}/${dueDate.day}/${dueDate.year}';
+        }
+        dateText = '$priority \u00b7 $relativeDate';
+        dateColor = Theme.of(context).colorScheme.onSurfaceVariant;
+      }
+    }
+
+    final showOverdue = dueDate != null && dateColor == Theme.of(context).colorScheme.error;
+
+    if (description.isNotEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          showOverdue
+              ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 14,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(dateText, style: AppTextStyles.labelSm.copyWith(color: dateColor)),
+                  ],
+                )
+              : Text(dateText, style: AppTextStyles.labelSm.copyWith(color: dateColor)),
+          const SizedBox(height: 2),
+          Text(
+            description,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.labelSm.copyWith(
+              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.7),
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (showOverdue) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.error_outline, size: 14, color: dateColor),
+          const SizedBox(width: 4),
+          Text(dateText, style: AppTextStyles.labelSm.copyWith(color: dateColor)),
+        ],
+      );
+    }
+
+    return Text(dateText, style: AppTextStyles.labelSm.copyWith(color: dateColor));
   }
 }

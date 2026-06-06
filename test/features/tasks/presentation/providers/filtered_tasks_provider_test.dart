@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:riverpod/riverpod.dart';
 
+import 'package:gigly/features/auth/domain/entities/entities.dart' as auth;
+import 'package:gigly/features/auth/presentation/providers/providers.dart';
 import 'package:gigly/features/tasks/domain/entities/entities.dart';
 import 'package:gigly/features/tasks/domain/repositories/repositories.dart';
 import 'package:gigly/features/tasks/presentation/providers/providers.dart';
@@ -69,6 +71,11 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         taskRepositoryProvider.overrideWithValue(mockRepository),
+        authStateProvider.overrideWith(
+          (_) => Stream<auth.UserEntity>.value(
+            const auth.UserEntity(id: 'test-uid', email: 'test@test.com'),
+          ),
+        ),
       ],
     );
     final sub = container.listen(tasksStreamProvider, (_, _) {});
