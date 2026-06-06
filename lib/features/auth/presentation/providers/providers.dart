@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/errors/errors.dart';
 import '../../data/datasources/datasources.dart';
 import '../../data/repositories/repositories.dart';
 import '../../domain/entities/entities.dart';
@@ -42,6 +43,18 @@ class AuthNotifier extends Notifier<AsyncValue<void>?> {
     try {
       await _repository.register(email: email, password: password);
       state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
+  }
+
+  Future<void> signInWithGoogle() async {
+    state = const AsyncLoading();
+    try {
+      await _repository.signInWithGoogle();
+      state = const AsyncData(null);
+    } on AuthPopupClosed {
+      state = null;
     } catch (e, st) {
       state = AsyncError(e, st);
     }

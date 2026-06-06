@@ -42,6 +42,16 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<UserEntity> signInWithGoogle() async {
+    try {
+      final model = await _dataSource.signInWithGoogle();
+      return model.toEntity();
+    } on AuthException catch (e) {
+      throw _mapToFailure(e);
+    }
+  }
+
+  @override
   Future<void> logout() async {
     try {
       await _dataSource.logout();
@@ -60,6 +70,11 @@ class AuthRepositoryImpl implements AuthRepository {
       'email-already-in-use' => const AuthEmailAlreadyInUse(),
       'weak-password' => const AuthWeakPassword(),
       'network-request-failed' => const AuthNetworkError(),
+      'popup-closed-by-user' => const AuthPopupClosed(),
+      'account-exists-with-different-credential' =>
+        const AuthEmailAlreadyInUse(),
+      'google-sign-in-failed' =>
+        AuthUnknown(e.message ?? 'Google Sign-In failed.'),
       _ => AuthUnknown(e.message ?? 'An unexpected error occurred.'),
     };
   }

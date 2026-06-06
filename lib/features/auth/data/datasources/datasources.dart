@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart' as fa;
+import 'package:google_sign_in/google_sign_in.dart';
 
 import 'auth_exception.dart';
 import '../models/models.dart';
@@ -6,6 +7,7 @@ import '../models/models.dart';
 abstract class AuthRemoteDataSource {
   Future<UserModel> login({required String email, required String password});
   Future<UserModel> register({required String email, required String password});
+  Future<UserModel> signInWithGoogle();
   Future<void> logout();
   Stream<UserModel?> authStateChanges();
 }
@@ -49,9 +51,42 @@ class FirebaseAuthRemoteDataSource implements AuthRemoteDataSource {
   }
 
   @override
+  Future<UserModel> signInWithGoogle() async {
+    try {
+      final googleUser = await GoogleSignIn.instance.authenticate();
+      final googleAuth = googleUser.authentication;
+      final credential = fa.GoogleAuthProvider.credential(
+        idToken: googleAuth.idToken,
+      );
+      final result = await _auth.signInWithCredential(credential);
+      return _mapUser(result.user);
+    } on GoogleSignInException catch (e) {
+      final code = switch (e.code) {
+        GoogleSignInExceptionCode.canceled ||
+        GoogleSignInExceptionCode.interrupted ||
+        GoogleSignInExceptionCode.uiUnavailable =>
+          'popup-closed-by-user',
+        _ => 'google-sign-in-failed',
+      };
+      throw AuthException(
+        code: code,
+        message: e.description ?? 'Google Sign-In failed.',
+      );
+    } on fa.FirebaseAuthException catch (e) {
+      throw AuthException.fromFirebase(e);
+    } catch (e) {
+      throw AuthException(
+        code: 'google-sign-in-failed',
+        message: e.toString(),
+      );
+    }
+  }
+
+  @override
   Future<void> logout() async {
     try {
       await _auth.signOut();
+      await GoogleSignIn.instance.signOut();
     } on fa.FirebaseAuthException catch (e) {
       throw AuthException.fromFirebase(e);
     }

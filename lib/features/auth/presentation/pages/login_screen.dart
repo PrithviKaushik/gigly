@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/errors/errors.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/gigly_snackbar.dart';
 import '../providers/providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -33,65 +35,129 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           AuthFailure e => e.message,
           _ => 'An unexpected error occurred.',
         };
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message)),
-        );
+        GiglySnackbar.showError(context, message);
       }
     });
 
     final authStatus = ref.watch(authNotifierProvider);
 
     return Scaffold(
-      appBar: AppBar(),
-      body: Form(
-        key: _formKey,
+      body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.xl,
+            vertical: AppSpacing.xxl,
+          ),
           children: [
-            TextFormField(
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(labelText: 'Email'),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Email is required' : null,
+            const SizedBox(height: AppSpacing.xxl),
+            Text('Gigly', style: AppTextStyles.displayTitle),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Welcome back',
+              style: AppTextStyles.headlineMd.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _passwordController,
-              obscureText: _obscurePassword,
-              decoration: InputDecoration(
-                labelText: 'Password',
-                suffixIcon: IconButton(
-                  icon: Icon(_obscurePassword
-                      ? Icons.visibility_off
-                      : Icons.visibility),
-                  onPressed: () =>
-                      setState(() => _obscurePassword = !_obscurePassword),
+            const SizedBox(height: AppSpacing.xxl),
+            Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                      prefixIcon: Icon(Icons.email_outlined),
+                    ),
+                    validator: (v) =>
+                        (v == null || v.trim().isEmpty) ? 'Email is required' : null,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  TextFormField(
+                    controller: _passwordController,
+                    obscureText: _obscurePassword,
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      prefixIcon: const Icon(Icons.lock_outlined),
+                      suffixIcon: IconButton(
+                        icon: Icon(_obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility),
+                        onPressed: () =>
+                            setState(() => _obscurePassword = !_obscurePassword),
+                      ),
+                    ),
+                    validator: (v) =>
+                        (v == null || v.isEmpty) ? 'Password is required' : null,
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  SizedBox(
+                    width: double.infinity,
+                    child: authStatus is AsyncLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : FilledButton(
+                            onPressed: _onLogin,
+                            child: const Text('Sign In'),
+                          ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            Row(
+              children: [
+                const Expanded(child: Divider()),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                  child: Text(
+                    'or',
+                    style: AppTextStyles.labelMd.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                const Expanded(child: Divider()),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => ref
+                    .read(authNotifierProvider.notifier)
+                    .signInWithGoogle(),
+                icon: const Icon(Icons.g_mobiledata),
+                label: const Text('Continue with Google'),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xxl),
+            Center(
+              child: TextButton(
+                onPressed: () => context.push('/register'),
+                child: RichText(
+                  text: TextSpan(
+                    style: AppTextStyles.bodyMd,
+                    children: [
+                      TextSpan(
+                        text: "Don't have an account? ",
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      ),
+                      TextSpan(
+                        text: 'Sign Up',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              validator: (v) =>
-                  (v == null || v.isEmpty) ? 'Password is required' : null,
-            ),
-            const SizedBox(height: 24),
-            if (authStatus is AsyncLoading)
-              const Center(child: CircularProgressIndicator())
-            else
-              _buildLoginButton(),
-            const SizedBox(height: 16),
-            TextButton(
-              onPressed: () => context.push('/register'),
-              child: const Text('Create an account'),
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildLoginButton() {
-    return FilledButton(
-      onPressed: _onLogin,
-      child: const Text('Login'),
     );
   }
 

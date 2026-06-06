@@ -45,6 +45,12 @@ class AuthNetworkError extends AuthFailure {
   const AuthNetworkError();
 }
 
+class AuthPopupClosed extends AuthFailure {
+  @override
+  String get message => '';
+  const AuthPopupClosed();
+}
+
 class AuthUnknown extends AuthFailure {
   @override
   final String message;
