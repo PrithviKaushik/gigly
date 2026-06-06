@@ -73,31 +73,17 @@ The application handles keyboard insets and common screen sizes responsively. Th
 ---
 
 ## Screenshots
+| Login | Dashboard |
+|--------|--------|
+| <img src="assets/screenshots/login-screen.jpeg" width="280"> | <img src="assets/screenshots/main-dashboard.jpeg" width="280"> |
 
-### Login Screen
+| Create Task | Edit Task |
+|--------|--------|
+| <img src="assets/screenshots/create-task.jpeg" width="280"> | <img src="assets/screenshots/edit-task.jpeg" width="280"> |
 
-![Login Screen](assets/screenshots/login-screen.jpeg)
-
-### Home Dashboard
-
-![Home Dashboard](assets/screenshots/main-dashboard.jpeg)
-
-### Task Creation
-
-![Task Creation](assets/screenshots/create-task.jpeg)
-
-### Task Editing
-
-![Task Editing](assets/screenshots/edit-task.jpeg)
-
-### Filtering
-
-![Filtering](assets/screenshots/filtering.jpeg)
-
-### Dark Mode
-
-![Dark Mode](assets/screenshots/dark-mode.jpeg)
-
+| Filtering | Dark Mode |
+|--------|--------|
+| <img src="assets/screenshots/filtering.jpeg" width="280"> | <img src="assets/screenshots/dark-mode.jpeg" width="280"> |
 ---
 
 ## Features
