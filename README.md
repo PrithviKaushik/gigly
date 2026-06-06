@@ -2,12 +2,11 @@
 
 A Flutter task management application for gig workers built with Clean Architecture, Riverpod, Firebase Authentication, and Cloud Firestore. The app provides a focused, real-time task experience with authentication, filtering, search, and dark mode support using Material 3 and a custom Warm Ink design palette.
 
+![License](https://img.shields.io/badge/license-MIT-green)
 ![Flutter](https://img.shields.io/badge/Flutter-3.29-blue?logo=flutter)
 ![Dart](https://img.shields.io/badge/Dart-3.11-0175C2?logo=dart)
 ![Riverpod](https://img.shields.io/badge/State%20Management-Riverpod-cyan)
 ![Firebase](https://img.shields.io/badge/Backend-Firebase-FFCA28?logo=firebase)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Tests](https://img.shields.io/badge/tests-52-passing-brightgreen)
 ![Analysis](https://img.shields.io/badge/analysis-passing-success)
 
 ---
