@@ -338,7 +338,7 @@ The test suite covers repositories (auth + tasks), filter state, search state, c
 1.  Clone the repository:
 
     ```bash
-    git clone <repository-url>
+    git clone https://github.com/PrithviKaushik/gigly
     cd gigly
     ```
 
