@@ -21,7 +21,7 @@ The video walks through the full user flow: registration, login, task creation, 
 
 ### Technical Documentation
 
-[Gigly Technical Documentation](https://docs.google.com/document/d/17MwWCUeiu8m-KiLdtPZobgxHUn3w-_9w1Uf7eGc_2aQ/edit?usp=sharing)
+[Gigly Technical Documentation](https://docs.google.com/document/d/1MdDbx-PlnoxtEcty13QMqZG0bm-Z7VbFcgRqT_LpwdA/edit?usp=sharing)
 
 The documentation covers the architectural decisions, data flow diagrams, Firestore schema design, route design, and testing strategy in detail.
 
