@@ -124,7 +124,7 @@ firebase deploy --only firestore:rules,firestore:indexes
 
 ```bash
 # Clone the repository
-git clone <repo-url>
+git clone https://github.com/PrithviKaushik/gigly
 cd gigly
 
 # Install dependencies
